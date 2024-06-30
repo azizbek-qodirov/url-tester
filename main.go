@@ -11,9 +11,25 @@ import (
 	"strings"
 	"sync"
 	"time"
-
-	"github.com/Azizbek-Qodirov/url-tester/models"
 )
+
+type RequestModel struct {
+	URL       string            `json:"url"`         // URL
+	Method    string            `json:"method"`      // Method
+	Body      string            `json:"body"`        // Body
+	Headers   map[string]string `json:"headers"`     // Headers
+	ReqCount  int               `json:"req_count"`   // Request count
+	CReqCount int               `json:"c_req_count"` // Concurrent request counts
+}
+
+type TestResult struct {
+	Method             string  `json:"method"`              // Method
+	URL                string  `json:"url"`                 // URL
+	SuccessfulRequests int     `json:"successful_requests"` // Succesful Requests
+	FailedRequests     int     `json:"failed_requests"`     // Failed Requests
+	Time               float64 `json:"time"`                // Duration in seconds
+	Logs               []byte  `json:"logs"`                // Logs
+}
 
 // InitRequest initializes and returns a pointer to a new RequestModel instance.
 // This function is useful for creating a new request model with default values.
@@ -28,8 +44,8 @@ import (
 //		ReqCount  int               `json:"req_count"`
 //		CReqCount int               `json:"c_req_count"`
 //	}
-func InitRequest() *models.RequestModel {
-	return &models.RequestModel{}
+func InitRequest() *RequestModel {
+	return &RequestModel{}
 }
 
 // InitRequests initializes and returns a slice of pointers to RequestModel instances.
@@ -45,16 +61,16 @@ func InitRequest() *models.RequestModel {
 //		ReqCount  int               `json:"req_count"`
 //		CReqCount int               `json:"c_req_count"`
 //	}
-func InitRequests() []*models.RequestModel {
-	return []*models.RequestModel{}
+func InitRequests() []*RequestModel {
+	return []*RequestModel{}
 }
 
 // DoTest performs load tests for multiple request models.
 // It takes a slice of RequestModel pointers and returns a slice of TestResult.
 // Each TestResult contains details about the successful and failed requests,
 // the duration of the test, and logs for each request.
-func DoTest(reqModels []*models.RequestModel) []models.TestResult {
-	var results []models.TestResult
+func DoTests(reqModels []*RequestModel) []TestResult {
+	var results []TestResult
 
 	for _, reqModel := range reqModels {
 		result := performSingleLoadTest(reqModel)
@@ -67,7 +83,7 @@ func DoTest(reqModels []*models.RequestModel) []models.TestResult {
 // It takes a pointer to a RequestModel and returns a TestResult.
 // The TestResult contains details about the successful and failed requests,
 // the duration of the test, and logs for each request.
-func DoTests(reqModel *models.RequestModel) models.TestResult {
+func DoTest(reqModel *RequestModel) TestResult {
 	return performSingleLoadTest(reqModel)
 }
 
@@ -113,7 +129,7 @@ func isValidURL(urlStr string) bool {
 	return resp.StatusCode < 400
 }
 
-func performSingleLoadTest(reqModel *models.RequestModel) models.TestResult {
+func performSingleLoadTest(reqModel *RequestModel) TestResult {
 	var logs []byte
 	var wg sync.WaitGroup
 	ch := make(chan int, reqModel.ReqCount)
@@ -122,7 +138,7 @@ func performSingleLoadTest(reqModel *models.RequestModel) models.TestResult {
 
 	if !isValidURL(reqModel.URL) {
 		logs = append(logs, []byte(fmt.Sprintf("Invalid URL: %s<br>", reqModel.URL))...)
-		return models.TestResult{
+		return TestResult{
 			Method:             reqModel.Method,
 			URL:                reqModel.URL,
 			SuccessfulRequests: 0,
@@ -207,7 +223,7 @@ func performSingleLoadTest(reqModel *models.RequestModel) models.TestResult {
 		}
 	}
 	dur := time.Since(start)
-	return models.TestResult{
+	return TestResult{
 		Method:             reqModel.Method,
 		URL:                reqModel.URL,
 		SuccessfulRequests: successfulRequests,
