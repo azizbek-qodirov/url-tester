@@ -137,7 +137,7 @@ func performSingleLoadTest(reqModel *RequestModel) TestResult {
 	start := time.Now()
 
 	if !isValidURL(reqModel.URL) {
-		logs = append(logs, []byte(fmt.Sprintf("Invalid URL: %s<br>", reqModel.URL))...)
+		logs = append(logs, []byte(fmt.Sprintf("Invalid URL: %s\n", reqModel.URL))...)
 		return TestResult{
 			Method:             reqModel.Method,
 			URL:                reqModel.URL,
@@ -155,7 +155,7 @@ func performSingleLoadTest(reqModel *RequestModel) TestResult {
 
 			req, err := http.NewRequest(reqModel.Method, reqModel.URL, bytes.NewBuffer([]byte(reqModel.Body)))
 			if err != nil {
-				logs = append(logs, []byte(fmt.Sprintf("%s &emsp;&emsp; %d &emsp;&emsp; %s &emsp;&emsp;Error creating request: nil <br>", reqModel.Method, 0, reqModel.URL))...)
+				logs = append(logs, []byte(fmt.Sprintf("%s %d %sError creating request: nil \n", reqModel.Method, 0, reqModel.URL))...)
 				ch <- 0
 				return
 			}
@@ -167,7 +167,7 @@ func performSingleLoadTest(reqModel *RequestModel) TestResult {
 			resp, err := client.Do(req)
 			if err != nil {
 				if resp != nil {
-					logs = append(logs, []byte(fmt.Sprintf("%s &emsp;&emsp; %d &emsp;&emsp; %s &emsp;&emsp;Error performing request: %s <br>", reqModel.Method, resp.StatusCode, reqModel.URL, err.Error()))...)
+					logs = append(logs, []byte(fmt.Sprintf("%s %d %sError performing request: %s \n", reqModel.Method, resp.StatusCode, reqModel.URL, err.Error()))...)
 				} else {
 					logs = append(logs, []byte(fmt.Sprintln("Goroutine error: Invalid memory address or nil pointer dereference"))...)
 				}
@@ -177,13 +177,13 @@ func performSingleLoadTest(reqModel *RequestModel) TestResult {
 			defer resp.Body.Close()
 
 			if resp.StatusCode >= 200 && resp.StatusCode < 300 {
-				res := fmt.Sprintf("%s &emsp;&emsp; %d &emsp;&emsp; %s &emsp;&emsp;Error: nil <br>", reqModel.Method, resp.StatusCode, reqModel.URL)
+				res := fmt.Sprintf("%s %d %sError: nil \n", reqModel.Method, resp.StatusCode, reqModel.URL)
 				logs = append(logs, []byte(res)...)
 				ch <- 1
 			} else {
 				body, err := io.ReadAll(resp.Body)
 				if err != nil {
-					logs = append(logs, []byte(fmt.Sprintf("%s &emsp;&emsp; %d &emsp;&emsp; %s &emsp;&emsp;Error reading response body: %s <br>", reqModel.Method, resp.StatusCode, reqModel.URL, err.Error()))...)
+					logs = append(logs, []byte(fmt.Sprintf("%s %d %sError reading response body: %s \n", reqModel.Method, resp.StatusCode, reqModel.URL, err.Error()))...)
 					ch <- 0
 					return
 				}
@@ -194,12 +194,12 @@ func performSingleLoadTest(reqModel *RequestModel) TestResult {
 				var errResp ErrResp
 				err = json.Unmarshal(body, &errResp)
 				if err != nil {
-					logs = append(logs, []byte(fmt.Sprintf("%s &emsp;&emsp; %d &emsp;&emsp; %s &emsp;&emsp;Error unmarshalling response: %s <br>", reqModel.Method, resp.StatusCode, reqModel.URL, err.Error()))...)
+					logs = append(logs, []byte(fmt.Sprintf("%s %d %sError unmarshalling response: %s \n", reqModel.Method, resp.StatusCode, reqModel.URL, err.Error()))...)
 					ch <- 0
 					return
 				}
 				bodyText := errResp.Error + " " + errResp.Details
-				res := fmt.Sprintf("%s &emsp;&emsp; %d &emsp;&emsp; %s &emsp;&emsp;Error: %s <br>", reqModel.Method, resp.StatusCode, reqModel.URL, bodyText)
+				res := fmt.Sprintf("%s %d %sError: %s \n", reqModel.Method, resp.StatusCode, reqModel.URL, bodyText)
 				logs = append(logs, []byte(res)...)
 				ch <- 0
 			}
