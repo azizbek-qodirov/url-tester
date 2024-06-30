@@ -1,4 +1,4 @@
-package main
+package url_tester
 
 import (
 	"bytes"
