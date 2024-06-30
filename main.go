@@ -15,22 +15,60 @@ import (
 	"github.com/Azizbek-Qodirov/url-tester/models"
 )
 
-func PerformLoadTests(reqModels []*models.RequestModel) []models.TestResult {
+// InitRequest initializes and returns a pointer to a new RequestModel instance.
+// This function is useful for creating a new request model with default values.
+//
+// Returns a struct:
+//
+//	type RequestModel struct {
+//		URL       string            `json:"url"`
+//		Method    string            `json:"method"`
+//		Body      string            `json:"body"`
+//		Headers   map[string]string `json:"headers"`
+//		ReqCount  int               `json:"req_count"`
+//		CReqCount int               `json:"c_req_count"`
+//	}
+func InitRequest() *models.RequestModel {
+	return &models.RequestModel{}
+}
+
+// InitRequests initializes and returns a slice of pointers to RequestModel instances.
+// This function is useful for creating an empty slice to hold multiple request models.
+//
+// Returns a slice to store:
+//
+//	type RequestModel struct {
+//		URL       string            `json:"url"`
+//		Method    string            `json:"method"`
+//		Body      string            `json:"body"`
+//		Headers   map[string]string `json:"headers"`
+//		ReqCount  int               `json:"req_count"`
+//		CReqCount int               `json:"c_req_count"`
+//	}
+func InitRequests() []*models.RequestModel {
+	return []*models.RequestModel{}
+}
+
+// DoTest performs load tests for multiple request models.
+// It takes a slice of RequestModel pointers and returns a slice of TestResult.
+// Each TestResult contains details about the successful and failed requests,
+// the duration of the test, and logs for each request.
+func DoTest(reqModels []*models.RequestModel) []models.TestResult {
 	var results []models.TestResult
 
 	for _, reqModel := range reqModels {
-		successfulRequests, failedRequests, duration, logs := performSingleLoadTest(reqModel)
-		result := models.TestResult{
-			Method:             reqModel.Method,
-			URL:                reqModel.URL,
-			SuccessfulRequests: successfulRequests,
-			FailedRequests:     failedRequests,
-			Time:               duration.Seconds(),
-			Logs:               string(logs),
-		}
+		result := performSingleLoadTest(reqModel)
 		results = append(results, result)
 	}
 	return results
+}
+
+// DoTests performs a load test for a single request model.
+// It takes a pointer to a RequestModel and returns a TestResult.
+// The TestResult contains details about the successful and failed requests,
+// the duration of the test, and logs for each request.
+func DoTests(reqModel *models.RequestModel) models.TestResult {
+	return performSingleLoadTest(reqModel)
 }
 
 func isValidURL(urlStr string) bool {
@@ -75,7 +113,7 @@ func isValidURL(urlStr string) bool {
 	return resp.StatusCode < 400
 }
 
-func performSingleLoadTest(reqModel *models.RequestModel) (int, int, time.Duration, []byte) {
+func performSingleLoadTest(reqModel *models.RequestModel) models.TestResult {
 	var logs []byte
 	var wg sync.WaitGroup
 	ch := make(chan int, reqModel.ReqCount)
@@ -84,7 +122,14 @@ func performSingleLoadTest(reqModel *models.RequestModel) (int, int, time.Durati
 
 	if !isValidURL(reqModel.URL) {
 		logs = append(logs, []byte(fmt.Sprintf("Invalid URL: %s<br>", reqModel.URL))...)
-		return 0, reqModel.ReqCount, time.Since(start), logs
+		return models.TestResult{
+			Method:             reqModel.Method,
+			URL:                reqModel.URL,
+			SuccessfulRequests: 0,
+			FailedRequests:     reqModel.ReqCount,
+			Time:               time.Since(start).Seconds(),
+			Logs:               logs,
+		}
 	}
 
 	for i := 0; i < reqModel.ReqCount; i++ {
@@ -162,5 +207,12 @@ func performSingleLoadTest(reqModel *models.RequestModel) (int, int, time.Durati
 		}
 	}
 	dur := time.Since(start)
-	return successfulRequests, failedRequests, dur, logs
+	return models.TestResult{
+		Method:             reqModel.Method,
+		URL:                reqModel.URL,
+		SuccessfulRequests: successfulRequests,
+		FailedRequests:     failedRequests,
+		Time:               dur.Seconds(),
+		Logs:               logs,
+	}
 }
