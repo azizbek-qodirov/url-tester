@@ -1,0 +1,11 @@
+# MyProject
+
+MyProject is a Go package for load testing APIs. It provides functionalities to perform load tests with various HTTP methods and request configurations.
+
+## Installation
+
+To install MyProject, use `go get`:
+
+```sh
+go get https://github.com/Azizbek-Qodirov/url-tester
+```
